@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+pkill -f "streamlit run .*app.py" || true
+
+exec .venv/bin/streamlit run app.py --server.headless true --server.port 8501
