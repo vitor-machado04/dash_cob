@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from io import BytesIO
 from pathlib import Path
 
 import pandas as pd
@@ -73,8 +74,8 @@ def normalize_status(raw: object) -> str:
 
 
 @st.cache_data(show_spinner=False)
-def load_data(file_path: str) -> pd.DataFrame:
-	df = pd.read_excel(file_path, sheet_name=BASE_SHEET, engine="openpyxl")
+def load_data(file_bytes: bytes) -> pd.DataFrame:
+	df = pd.read_excel(BytesIO(file_bytes), sheet_name=BASE_SHEET, engine="openpyxl")
 
 	df.columns = [c.strip() if isinstance(c, str) else c for c in df.columns]
 
@@ -355,15 +356,24 @@ def main() -> None:
 	st.caption("Visão analítica de envios de cobrança por fatura, status, aging e evolução temporal.")
 
 	app_dir = Path(__file__).parent
-	default_path = resolve_excel_path(app_dir)
-	if default_path is None:
-		st.error("Nenhum arquivo .xlsx encontrado na pasta do app.")
-		st.stop()
+	uploaded_file = st.sidebar.file_uploader("Arquivo de dados (.xlsx)", type=["xlsx"])
 
-	st.caption(f"Fonte de dados: {default_path.name}")
+	if uploaded_file is not None:
+		data_source_name = uploaded_file.name
+		data_bytes = uploaded_file.getvalue()
+	else:
+		default_path = resolve_excel_path(app_dir)
+		if default_path is None:
+			st.error("Nenhum arquivo .xlsx encontrado na pasta do app. Envie um arquivo pela barra lateral.")
+			st.stop()
+
+		data_source_name = default_path.name
+		data_bytes = default_path.read_bytes()
+
+	st.caption(f"Fonte de dados: {data_source_name}")
 
 	try:
-		df = load_data(file_path=str(default_path))
+		df = load_data(file_bytes=data_bytes)
 	except Exception as exc:
 		st.exception(exc)
 		st.stop()
