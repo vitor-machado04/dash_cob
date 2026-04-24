@@ -173,12 +173,26 @@ def build_line_chart(df: pd.DataFrame) -> go.Figure:
             hoverinfo="skip",
         ))
 
-    # Pontos com hover
+    # Pontos com hover e labels de percentual
+    labels = [fmt_pct(p) for p in df["pct"]]
+    # Posição do label: acima ou abaixo para evitar colisão com a anotação do pior mês
+    text_positions = []
+    for i, p in enumerate(df["pct"]):
+        if i == worst_idx:
+            text_positions.append("bottom center")
+        elif i > 0 and df["pct"].iloc[i] < df["pct"].iloc[i - 1]:
+            text_positions.append("top center")
+        else:
+            text_positions.append("top center")
+
     fig.add_trace(go.Scatter(
         x=df["mes_label"],
         y=df["pct"],
-        mode="markers",
+        mode="markers+text",
         marker=dict(color=colors, size=7, line=dict(color="#f8fafc", width=1.5)),
+        text=labels,
+        textposition=text_positions,
+        textfont=dict(family="DM Sans", size=10, color="#475569"),
         showlegend=False,
         customdata=np.stack([
             df["emitido"].values,
@@ -225,7 +239,7 @@ def build_line_chart(df: pd.DataFrame) -> go.Figure:
         template="plotly_white",
         paper_bgcolor="#ffffff",
         plot_bgcolor="#ffffff",
-        margin=dict(l=20, r=20, t=20, b=20),
+        margin=dict(l=20, r=20, t=30, b=20),
         xaxis=dict(
             showgrid=False,
             tickfont=dict(family="DM Sans", size=11, color="#64748b"),
@@ -237,13 +251,14 @@ def build_line_chart(df: pd.DataFrame) -> go.Figure:
             gridcolor="#f1f5f9",
             tickfont=dict(family="DM Sans", size=11, color="#64748b"),
             linecolor="#e2e8f0",
+            range=[0, df["pct"].max() * 1.18],
         ),
         hoverlabel=dict(
             bgcolor="#ffffff",
             bordercolor="#e2e8f0",
             font=dict(family="DM Sans", size=12, color="#1e293b"),
         ),
-        height=340,
+        height=360,
     )
     return fig
 
